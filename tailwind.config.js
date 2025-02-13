@@ -8,12 +8,11 @@ const config = {
   theme: {
     extend: {
       colors: {
-        background: "#E4E4E4",
-        foreground: "#335E3B",
-        primary: "#335E3B",    // green
-        secondary: "#FFD97D",  // yellow
-        accent: "#FEC4B6",     // coral/pink
-        text: "#444444",       // dark gray
+        background: "#3B6790",
+        foreground: "#444444",
+        primary: "#444444",
+        secondary: "#E4E4E4",
+        text: "#444444"
       },
       fontFamily: {
         sans: ['Quicksand', 'sans-serif'],

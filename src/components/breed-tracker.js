@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
+import NumberStepper from './number-stepper';
 
 const BreedTracker = () => {
   const categories = {
@@ -25,19 +26,20 @@ const BreedTracker = () => {
 
   const stages = ['Incubator', 'Hatch', '1 Month', '2 Month', 'Juvenile'];
 
+  // State declarations
   const [breedData, setBreedData] = useState(() => {
     const initialData = {};
     Object.entries(categories).forEach(([category, breeds]) => {
       breeds.forEach(breed => {
         initialData[breed] = {
           breeders: {
-            hens: 0,
-            roosters: 0
+            females: 0,
+            males: 0
           },
           stages: {},
           juvenile: {
-            cockerels: 0,
-            pullets: 0,
+            males: 0,
+            females: 0,
             unknown: 0
           }
         };
@@ -54,17 +56,75 @@ const BreedTracker = () => {
   const [expandedCategories, setExpandedCategories] = useState({});
   const [expandedBreeds, setExpandedBreeds] = useState({});
 
+  // Handler functions
+  const handleStageChange = (breed, stage, value) => {
+    setBreedData(prev => ({
+      ...prev,
+      [breed]: {
+        ...prev[breed],
+        stages: {
+          ...prev[breed].stages,
+          [stage]: value
+        }
+      }
+    }));
+  };
+
+  const handleBreedersChange = (breed, type, value) => {
+    setBreedData(prev => ({
+      ...prev,
+      [breed]: {
+        ...prev[breed],
+        breeders: {
+          ...prev[breed].breeders,
+          [type]: value
+        }
+      }
+    }));
+  };
+
+  const handleJuvenileChange = (breed, type, value) => {
+    setBreedData(prev => ({
+      ...prev,
+      [breed]: {
+        ...prev[breed],
+        juvenile: {
+          ...prev[breed].juvenile,
+          [type]: value
+        }
+      }
+    }));
+  };
+
+  // Toggle functions
+  const toggleCategory = (category) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
+  const toggleBreed = (breed) => {
+    setExpandedBreeds(prev => ({
+      ...prev,
+      [breed]: !prev[breed]
+    }));
+  };
+
+  // Calculation functions
   const getJuvenileTotal = (breed) => {
     const juvenileData = breedData[breed].juvenile;
-    return juvenileData.cockerels + juvenileData.pullets + juvenileData.unknown;
+    return Number(juvenileData.males || 0) + 
+           Number(juvenileData.females || 0) + 
+           Number(juvenileData.unknown || 0);
   };
 
   const getBreedTotal = (breed) => {
     const stageTotal = Object.entries(breedData[breed].stages)
       .reduce((sum, [stage, count]) => sum + count, 0);
     return stageTotal + 
-           breedData[breed].breeders.hens + 
-           breedData[breed].breeders.roosters +
+           breedData[breed].breeders.females + 
+           breedData[breed].breeders.males +
            getJuvenileTotal(breed);
   };
 
@@ -87,209 +147,189 @@ const BreedTracker = () => {
     return categories[category].reduce((sum, breed) => sum + getBreedTotal(breed), 0);
   };
 
-  const handleStageChange = (breed, stage, value) => {
-    const numValue = parseInt(value) || 0;
-    setBreedData(prev => ({
-      ...prev,
-      [breed]: {
-        ...prev[breed],
-        stages: {
-          ...prev[breed].stages,
-          [stage]: numValue
-        }
-      }
-    }));
-  };
-
-  const handleBreedersChange = (breed, type, value) => {
-    const numValue = parseInt(value) || 0;
-    setBreedData(prev => ({
-      ...prev,
-      [breed]: {
-        ...prev[breed],
-        breeders: {
-          ...prev[breed].breeders,
-          [type]: numValue
-        }
-      }
-    }));
-  };
-
-  const handleJuvenileChange = (breed, type, value) => {
-    const numValue = parseInt(value) || 0;
-    setBreedData(prev => ({
-      ...prev,
-      [breed]: {
-        ...prev[breed],
-        juvenile: {
-          ...prev[breed].juvenile,
-          [type]: numValue
-        }
-      }
-    }));
-  };
-
-  const toggleCategory = (category) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [category]: !prev[category]
-    }));
-  };
-
-  const toggleBreed = (breed) => {
-    setExpandedBreeds(prev => ({
-      ...prev,
-      [breed]: !prev[breed]
-    }));
-  };
-
   const totalAllBreeds = Object.values(categories).reduce((sum, breeds) => 
     sum + breeds.reduce((breedSum, breed) => breedSum + getBreedTotal(breed), 0), 0);
 
   return (
     <div className="max-w-lg mx-auto p-4">
-      {/* Logo */}
-      <div className="flex items-center justify-center mb-6">
+      <div className="flex items-center justify-center mb-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-primary mb-2">Sugar Feather Farm</h1>
-          <div className="h-1 w-32 bg-secondary mx-auto"></div>
+          <h1 className="text-5xl font-bold text-text mb-2">Sugar Feather Farm</h1>
+          <div className="h-1 w-32 bg-background mx-auto"></div>
         </div>
       </div>
 
-      <Card className="mb-4 border-2 border-[#335E3B]">
-        <CardHeader className="bg-[#335E3B] text-white">
+      <Card className="mb-8 border-2 border-foreground">
+        <CardHeader className="bg-background text-white">
           <CardTitle>Poultry Tracker</CardTitle>
         </CardHeader>
         <CardContent className="bg-white">
-          <div className="text-sm mb-2 font-bold text-primary">Total Birds: {totalAllBreeds}</div>
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            <div className="bg-[#E4E4E4] p-2 rounded border border-[#335E3B]">
-              <div className="font-semibold text-primary">Breeding Hens</div>
-              <div>{getBreedersTotal('hens')}</div>
+          <div className="text-lg mb-4 font-bold text-text">Total Birds: {totalAllBreeds}</div>
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-secondary p-3 rounded border border-foreground">
+              <div className="font-semibold text-text mb-2">Breeder Females</div>
+              <div>{getBreedersTotal('females')}</div>
             </div>
-            <div className="bg-[#E4E4E4] p-2 rounded border border-[#335E3B]">
-              <div className="font-semibold text-primary">Breeding Roosters</div>
-              <div>{getBreedersTotal('roosters')}</div>
+            <div className="bg-secondary p-3 rounded border border-foreground">
+              <div className="font-semibold text-text mb-2">Breeding Males</div>
+              <div>{getBreedersTotal('males')}</div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 mb-4">
+          <div className="grid grid-cols-2 gap-4 mb-6">
             {stages.slice(0, -1).map(stage => (
-              <div key={stage} className="bg-[#E4E4E4] p-2 rounded border border-[#335E3B]">
-                <div className="font-semibold text-primary">{stage}</div>
+              <div key={stage} className="bg-secondary p-3 rounded border border-foreground">
+                <div className="font-semibold text-text mb-2">{stage}</div>
                 <div>{getStageTotal(stage)}</div>
               </div>
             ))}
           </div>
-          <div className="bg-[#E4E4E4] p-2 rounded border border-[#335E3B] mb-4">
-            <div className="font-semibold text-primary">Juvenile ({getStageTotal('Juvenile')})</div>
-            <div className="grid grid-cols-3 gap-2 mt-1">
-              <div className="text-sm">C: {getJuvenileTypeTotal('cockerels')}</div>
-              <div className="text-sm">P: {getJuvenileTypeTotal('pullets')}</div>
-              <div className="text-sm">U: {getJuvenileTypeTotal('unknown')}</div>
+          <div className="bg-secondary p-3 rounded border border-foreground mb-4">
+            <div className="font-semibold text-text mb-2">
+              Juvenile ({getStageTotal('Juvenile')})
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="text-sm">Males: {getJuvenileTypeTotal('males')}</div>
+              <div className="text-sm">Females: {getJuvenileTypeTotal('females')}</div>
+              <div className="text-sm">Unk: {getJuvenileTypeTotal('unknown')}</div>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {Object.entries(categories).map(([category, breeds]) => (
-        <Card key={category} className="mb-4 border-2 border-[#335E3B]">
+        <Card key={category} className="mb-8 border-2 border-foreground">
           <CardHeader 
-            className="bg-[#335E3B] text-white cursor-pointer flex flex-row items-center justify-between"
+            className="bg-background text-white cursor-pointer flex flex-row items-center justify-between"
             onClick={() => toggleCategory(category)}
           >
             <CardTitle className="text-lg">
               {category} ({getCategoryTotal(category)})
             </CardTitle>
-            {expandedCategories[category] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            {expandedCategories[category] ? 
+              <Minus size={24} className="text-white" /> : 
+              <Plus size={24} className="text-white" />
+            }
           </CardHeader>
           
           {expandedCategories[category] && (
             <CardContent className="bg-white">
+              {/* Category Summary Section */}
+              <div className="mb-8 border-b border-foreground pb-8">
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-secondary p-3 rounded border border-foreground">
+                    <div className="font-semibold text-text mb-2">Breeding Females</div>
+                    <div>
+                      {breeds.reduce((sum, breed) => sum + Number(breedData[breed].breeders.females || 0), 0)}
+                    </div>
+                  </div>
+                  <div className="bg-secondary p-3 rounded border border-foreground">
+                    <div className="font-semibold text-text mb-2">Breeding Males</div>
+                    <div>
+                      {breeds.reduce((sum, breed) => sum + Number(breedData[breed].breeders.males || 0), 0)}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  {stages.slice(0, -1).map(stage => (
+                    <div key={stage} className="bg-secondary p-3 rounded border border-foreground">
+                      <div className="font-semibold text-text mb-2">{stage}</div>
+                      <div>
+                        {breeds.reduce((sum, breed) => sum + Number(breedData[breed].stages[stage] || 0), 0)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-secondary p-3 rounded border border-foreground">
+                  <div className="font-semibold text-text mb-2">
+                    Juvenile ({breeds.reduce((sum, breed) => sum + getJuvenileTotal(breed), 0)})
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-sm">
+                      Males: {breeds.reduce((sum, breed) => sum + Number(breedData[breed].juvenile.males || 0), 0)}
+                    </div>
+                    <div className="text-sm">
+                      Females: {breeds.reduce((sum, breed) => sum + Number(breedData[breed].juvenile.females || 0), 0)}
+                    </div>
+                    <div className="text-sm">
+                      Unk: {breeds.reduce((sum, breed) => sum + Number(breedData[breed].juvenile.unknown || 0), 0)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Individual Breeds */}
               {breeds.map(breed => (
-                <div key={breed} className="mb-4 border-b border-[#335E3B] pb-4">
-                  <div 
-                    className="flex justify-between items-center cursor-pointer mb-2"
+                <div key={breed} className="mb-8 last:mb-0 border-b last:border-b-0 border-foreground pb-8">
+                  <div className="flex justify-between items-center cursor-pointer mb-6"
                     onClick={() => toggleBreed(breed)}
                   >
-                    <div className="font-medium text-primary">{breed}</div>
+                    <div className="font-medium text-text">{breed}</div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm">Total: {getBreedTotal(breed)}</span>
-                      {expandedBreeds[breed] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      {expandedBreeds[breed] ? 
+                        <Minus size={20} className="text-background" /> : 
+                          <Plus size={20} className="text-background" />
+                      }
                     </div>
                   </div>
                   
                   {expandedBreeds[breed] && (
                     <div>
-                      <div className="grid grid-cols-2 gap-2 mb-4">
-                        <div className="bg-[#E4E4E4] p-2 rounded border border-[#335E3B]">
-                          <label className="text-sm block mb-1 font-medium text-primary">Breeding Hens</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={breedData[breed].breeders.hens}
-                            onChange={(e) => handleBreedersChange(breed, 'hens', e.target.value)}
-                            className="w-full p-1 border border-[#335E3B] rounded text-center bg-white"
+                      <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="bg-secondary p-3 rounded border border-foreground">
+                          <label className="text-sm block mb-2 font-medium text-text">
+                            Breeding Females
+                          </label>
+                          <NumberStepper
+                            value={breedData[breed].breeders.females}
+                            onChange={(value) => handleBreedersChange(breed, 'females', value)}
                           />
                         </div>
-                        <div className="bg-[#E4E4E4] p-2 rounded border border-[#335E3B]">
-                          <label className="text-sm block mb-1 font-medium text-primary">Breeding Roosters</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={breedData[breed].breeders.roosters}
-                            onChange={(e) => handleBreedersChange(breed, 'roosters', e.target.value)}
-                            className="w-full p-1 border border-[#335E3B] rounded text-center bg-white"
+                        <div className="bg-secondary p-3 rounded border border-foreground">
+                          <label className="text-sm block mb-2 font-medium text-text">
+                            Breeding Males
+                          </label>
+                          <NumberStepper
+                            value={breedData[breed].breeders.males}
+                            onChange={(value) => handleBreedersChange(breed, 'males', value)}
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 mb-4">
+                      <div className="grid grid-cols-2 gap-4 mb-6">
                         {stages.slice(0, -1).map(stage => (
-                          <div key={stage} className="bg-secondary p-2 rounded border border-[#335E3B]">
-                            <label className="text-sm block mb-1 text-primary">{stage}</label>
-                            <input
-                              type="number"
-                              min="0"
+                          <div key={stage} className="bg-secondary p-3 rounded border border-foreground">
+                            <label className="text-sm block mb-2 text-text">{stage}</label>
+                            <NumberStepper
                               value={breedData[breed].stages[stage]}
-                              onChange={(e) => handleStageChange(breed, stage, e.target.value)}
-                              className="w-full p-1 border border-[#335E3B] rounded text-center bg-white"
+                              onChange={(value) => handleStageChange(breed, stage, value)}
                             />
                           </div>
                         ))}
                       </div>
-                      <div className="bg-[#FEC4B6] p-2 rounded border border-[#335E3B] mb-4">
-                        <div className="flex justify-between mb-2">
-                          <label className="text-sm font-medium text-primary">Juvenile</label>
+                      <div className="bg-secondary p-3 rounded border border-foreground">
+                        <div className="flex justify-between mb-3">
+                          <label className="text-sm font-medium text-text">Juvenile</label>
                           <span className="text-sm">Total: {getJuvenileTotal(breed)}</span>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-3 gap-4">
                           <div>
-                            <label className="text-xs block mb-1 text-primary">Cockerels</label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={breedData[breed].juvenile.cockerels}
-                              onChange={(e) => handleJuvenileChange(breed, 'cockerels', e.target.value)}
-                              className="w-full p-1 border border-[#335E3B] rounded text-center text-sm bg-white"
+                            <label className="text-xs block mb-2 text-text">Males</label>
+                            <NumberStepper
+                              value={breedData[breed].juvenile.males}
+                              onChange={(value) => handleJuvenileChange(breed, 'males', value)}
                             />
                           </div>
                           <div>
-                            <label className="text-xs block mb-1 text-primary">Pullets</label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={breedData[breed].juvenile.pullets}
-                              onChange={(e) => handleJuvenileChange(breed, 'pullets', e.target.value)}
-                              className="w-full p-1 border border-[#335E3B] rounded text-center text-sm bg-white"
+                            <label className="text-xs block mb-2 text-text">Females</label>
+                            <NumberStepper
+                              value={breedData[breed].juvenile.females}
+                              onChange={(value) => handleJuvenileChange(breed, 'females', value)}
                             />
                           </div>
                           <div>
-                            <label className="text-xs block mb-1 text-primary">Unknown</label>
-                            <input
-                              type="number"
-                              min="0"
+                            <label className="text-xs block mb-2 text-text">Unknown</label>
+                            <NumberStepper
                               value={breedData[breed].juvenile.unknown}
-                              onChange={(e) => handleJuvenileChange(breed, 'unknown', e.target.value)}
-                              className="w-full p-1 border border-[#335E3B] rounded text-center text-sm bg-white"
+                              onChange={(value) => handleJuvenileChange(breed, 'unknown', value)}
                             />
                           </div>
                         </div>
@@ -298,7 +338,7 @@ const BreedTracker = () => {
                   )}
                 </div>
               ))}
-            </CardContent>
+              </CardContent>
           )}
         </Card>
       ))}
