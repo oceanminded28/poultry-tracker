@@ -1,12 +1,12 @@
-import { Playfair_Display } from 'next/font/google';
+import { Quicksand } from 'next/font/google';
 import './globals.css'
 
-const playfair = Playfair_Display({ subsets: ['latin'] });
+const quicksand = Quicksand({ subsets: ['latin'], weight: ['400'] });
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={playfair.className}>{children}</body>
+      <body className={quicksand.className}>{children}</body>
     </html>
   );
 }

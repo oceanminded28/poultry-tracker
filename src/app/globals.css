@@ -1,49 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
-@layer base {
-  :root {
-    --background: 40 33% 98%;
-    --foreground: 124 29% 28%;
-    --card: 0 0% 100%;
-    --card-foreground: 124 29% 28%;
-    --primary: 124 29% 28%;
-    --primary-foreground: 40 33% 98%;
-    --secondary: 11 98% 85%;
-    --secondary-foreground: 124 29% 28%;
-    --muted: 37 48% 48%;
-    --muted-foreground: 124 29% 28%;
-    --accent: 11 98% 85%;
-    --accent-foreground: 124 29% 28%;
-    --border: 37 48% 48%;
-    --input: 124 29% 28%;
-    --ring: 124 29% 28%;
-    --radius: 0.5rem;
+
+@layer components {
+  .card-header {
+    @apply bg-primary text-background rounded-t-lg;
   }
-
-  body {
-    background-color: #FAF9F6;
-    color: #335E3B;
-    font-family: "Georgia", serif;
+  
+  .stat-card {
+    @apply bg-accent border border-primary;
   }
-
-  input {
-    border-color: #335E3B !important;
+  
+  .breed-card {
+    @apply border-2 border-primary;
   }
-}
-
-.card-header {
-  background-color: #335E3B;
-  color: #FAF9F6;
-  border-radius: 0.5rem 0.5rem 0 0;
-}
-
-.stat-card {
-  background-color: #FEC4B6;
-  border: 1px solid #335E3B;
-}
-
-.breed-card {
-  border: 2px solid #335E3B;
 }

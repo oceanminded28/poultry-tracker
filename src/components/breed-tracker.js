@@ -151,8 +151,8 @@ const BreedTracker = () => {
       {/* Logo */}
       <div className="flex items-center justify-center mb-6">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-[#335E3B] font-serif mb-2">Sugar Feather Farm</h1>
-          <div className="h-1 w-32 bg-[#FFD97D] mx-auto"></div>
+          <h1 className="text-4xl font-bold text-primary mb-2">Sugar Feather Farm</h1>
+          <div className="h-1 w-32 bg-secondary mx-auto"></div>
         </div>
       </div>
 
@@ -161,27 +161,27 @@ const BreedTracker = () => {
           <CardTitle>Poultry Tracker</CardTitle>
         </CardHeader>
         <CardContent className="bg-white">
-          <div className="text-sm mb-2 font-bold text-[#335E3B]">Total Birds: {totalAllBreeds}</div>
+          <div className="text-sm mb-2 font-bold text-primary">Total Birds: {totalAllBreeds}</div>
           <div className="grid grid-cols-2 gap-2 mb-4">
-            <div className="bg-[#FFD97D] p-2 rounded border border-[#335E3B]">
-              <div className="font-semibold text-[#335E3B]">Breeding Hens</div>
+            <div className="bg-[#E4E4E4] p-2 rounded border border-[#335E3B]">
+              <div className="font-semibold text-primary">Breeding Hens</div>
               <div>{getBreedersTotal('hens')}</div>
             </div>
-            <div className="bg-[#FFD97D] p-2 rounded border border-[#335E3B]">
-              <div className="font-semibold text-[#335E3B]">Breeding Roosters</div>
+            <div className="bg-[#E4E4E4] p-2 rounded border border-[#335E3B]">
+              <div className="font-semibold text-primary">Breeding Roosters</div>
               <div>{getBreedersTotal('roosters')}</div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 mb-4">
             {stages.slice(0, -1).map(stage => (
-              <div key={stage} className="bg-[#FFD97D] p-2 rounded border border-[#335E3B]">
-                <div className="font-semibold text-[#335E3B]">{stage}</div>
+              <div key={stage} className="bg-[#E4E4E4] p-2 rounded border border-[#335E3B]">
+                <div className="font-semibold text-primary">{stage}</div>
                 <div>{getStageTotal(stage)}</div>
               </div>
             ))}
           </div>
-          <div className="bg-[#FFD97D] p-2 rounded border border-[#335E3B] mb-4">
-            <div className="font-semibold text-[#335E3B]">Juvenile ({getStageTotal('Juvenile')})</div>
+          <div className="bg-[#E4E4E4] p-2 rounded border border-[#335E3B] mb-4">
+            <div className="font-semibold text-primary">Juvenile ({getStageTotal('Juvenile')})</div>
             <div className="grid grid-cols-3 gap-2 mt-1">
               <div className="text-sm">C: {getJuvenileTypeTotal('cockerels')}</div>
               <div className="text-sm">P: {getJuvenileTypeTotal('pullets')}</div>
@@ -211,7 +211,7 @@ const BreedTracker = () => {
                     className="flex justify-between items-center cursor-pointer mb-2"
                     onClick={() => toggleBreed(breed)}
                   >
-                    <div className="font-medium text-[#335E3B]">{breed}</div>
+                    <div className="font-medium text-primary">{breed}</div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm">Total: {getBreedTotal(breed)}</span>
                       {expandedBreeds[breed] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -221,8 +221,8 @@ const BreedTracker = () => {
                   {expandedBreeds[breed] && (
                     <div>
                       <div className="grid grid-cols-2 gap-2 mb-4">
-                        <div className="bg-[#FFD97D] p-2 rounded border border-[#335E3B]">
-                          <label className="text-sm block mb-1 font-medium text-[#335E3B]">Breeding Hens</label>
+                        <div className="bg-[#E4E4E4] p-2 rounded border border-[#335E3B]">
+                          <label className="text-sm block mb-1 font-medium text-primary">Breeding Hens</label>
                           <input
                             type="number"
                             min="0"
@@ -231,8 +231,8 @@ const BreedTracker = () => {
                             className="w-full p-1 border border-[#335E3B] rounded text-center bg-white"
                           />
                         </div>
-                        <div className="bg-[#FFD97D] p-2 rounded border border-[#335E3B]">
-                          <label className="text-sm block mb-1 font-medium text-[#335E3B]">Breeding Roosters</label>
+                        <div className="bg-[#E4E4E4] p-2 rounded border border-[#335E3B]">
+                          <label className="text-sm block mb-1 font-medium text-primary">Breeding Roosters</label>
                           <input
                             type="number"
                             min="0"
@@ -244,8 +244,8 @@ const BreedTracker = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-2 mb-4">
                         {stages.slice(0, -1).map(stage => (
-                          <div key={stage} className="bg-[#FFD97D] p-2 rounded border border-[#335E3B]">
-                            <label className="text-sm block mb-1 text-[#335E3B]">{stage}</label>
+                          <div key={stage} className="bg-secondary p-2 rounded border border-[#335E3B]">
+                            <label className="text-sm block mb-1 text-primary">{stage}</label>
                             <input
                               type="number"
                               min="0"
@@ -258,12 +258,12 @@ const BreedTracker = () => {
                       </div>
                       <div className="bg-[#FEC4B6] p-2 rounded border border-[#335E3B] mb-4">
                         <div className="flex justify-between mb-2">
-                          <label className="text-sm font-medium text-[#335E3B]">Juvenile</label>
+                          <label className="text-sm font-medium text-primary">Juvenile</label>
                           <span className="text-sm">Total: {getJuvenileTotal(breed)}</span>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                           <div>
-                            <label className="text-xs block mb-1 text-[#335E3B]">Cockerels</label>
+                            <label className="text-xs block mb-1 text-primary">Cockerels</label>
                             <input
                               type="number"
                               min="0"
@@ -273,7 +273,7 @@ const BreedTracker = () => {
                             />
                           </div>
                           <div>
-                            <label className="text-xs block mb-1 text-[#335E3B]">Pullets</label>
+                            <label className="text-xs block mb-1 text-primary">Pullets</label>
                             <input
                               type="number"
                               min="0"
@@ -283,7 +283,7 @@ const BreedTracker = () => {
                             />
                           </div>
                           <div>
-                            <label className="text-xs block mb-1 text-[#335E3B]">Unknown</label>
+                            <label className="text-xs block mb-1 text-primary">Unknown</label>
                             <input
                               type="number"
                               min="0"
