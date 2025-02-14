@@ -1,9 +1,11 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Plus, Minus } from 'lucide-react';
 import NumberStepper from './number-stepper';
+import ExportButton from './export-button';
+import DbService from '@/db/db-service';
 
 const BreedTracker = () => {
   const categories = {
@@ -21,7 +23,8 @@ const BreedTracker = () => {
     ],
     'Geese': ['Roman Geese', 'Guinea Fowl'],
     'Quail': ['Button Quail', 'Celadon Coturnix Quail', 'Pharaoh Coturnix Quail'],
-    'Turkey': ['Heritage Turkey', 'Black Spanish Turkey', 'Narragansett Turkey']
+    'Turkey': ['Heritage Turkey', 'Black Spanish Turkey', 'Narragansett Turkey'],
+    'Guinea Fowl': ['Guinea Fowl']
   };
 
   const stages = ['Incubator', 'Hatch', '1 Month', '2 Month', 'Juvenile'];
@@ -150,6 +153,23 @@ const BreedTracker = () => {
   const totalAllBreeds = Object.values(categories).reduce((sum, breeds) => 
     sum + breeds.reduce((breedSum, breed) => breedSum + getBreedTotal(breed), 0), 0);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const saveSnapshot = async () => {
+      try {
+        await DbService.saveDailySnapshot(breedData);
+      } catch (error) {
+        console.error('Failed to save snapshot:', error);
+      }
+    };
+
+    // Only save if we have data
+    if (Object.keys(breedData).length > 0) {
+      saveSnapshot();
+    }
+  }, [breedData]);
+
   return (
     <div className="max-w-lg mx-auto p-4">
       <div className="flex items-center justify-center mb-8">
@@ -158,7 +178,11 @@ const BreedTracker = () => {
           <div className="h-1 w-32 bg-background mx-auto"></div>
         </div>
       </div>
+      <div className="flex justify-between items-center mb-4">
+  <div className="text-lg font-bold text-text">Total Birds: {totalAllBreeds}</div>
+  <ExportButton />
 
+</div>
       <Card className="mb-8 border-2 border-foreground">
         <CardHeader className="bg-background text-white">
           <CardTitle>Poultry Tracker</CardTitle>
