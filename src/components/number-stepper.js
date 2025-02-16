@@ -22,7 +22,7 @@ const NumberStepper = ({ value, onChange, min = 0 }) => {
       >
         <Minus size={16} className="text-foreground" />
       </button>
-      <div className="px-4 py-1 bg-white border-t border-b border-foreground min-w-[50px] text-center">
+      <div className="px-4 py-1 bg-white border-t border-b border-foreground rounded-md min-w-[50px] text-center">
         {value}
       </div>
       <button

@@ -1,75 +1,40 @@
 import { stringify } from 'csv-stringify/sync';
 import { openDB } from 'idb';
+import { DB_NAME, DB_VERSION, STORES } from '@/constants/database';
+import { getCategoryForBreed } from '@/constants/breeds';
 
 // Initialize IndexedDB connection only in browser environment
 const dbPromise = (typeof window !== 'undefined' && window.indexedDB) 
-  ? openDB('poultryDB', 1, {
+  ? openDB(DB_NAME, DB_VERSION, {
       upgrade(db) {
         // Create object stores if they don't exist
-        if (!db.objectStoreNames.contains('daily_counts')) {
-          const dailyCountsStore = db.createObjectStore('daily_counts', { keyPath: 'id', autoIncrement: true });
+        if (!db.objectStoreNames.contains(STORES.DAILY_COUNTS)) {
+          const dailyCountsStore = db.createObjectStore(STORES.DAILY_COUNTS, { keyPath: 'id', autoIncrement: true });
           dailyCountsStore.createIndex('date', 'date');
           dailyCountsStore.createIndex('breed', 'breed');
         }
-        if (!db.objectStoreNames.contains('breeders')) {
-          db.createObjectStore('breeders', { keyPath: 'id', autoIncrement: true });
+        if (!db.objectStoreNames.contains(STORES.BREEDERS)) {
+          db.createObjectStore(STORES.BREEDERS, { keyPath: 'id', autoIncrement: true });
         }
-        if (!db.objectStoreNames.contains('juveniles')) {
-          db.createObjectStore('juveniles', { keyPath: 'id', autoIncrement: true });
+        if (!db.objectStoreNames.contains(STORES.JUVENILES)) {
+          db.createObjectStore(STORES.JUVENILES, { keyPath: 'id', autoIncrement: true });
         }
       }
     })
   : null;
 
-// Helper function to get category for a breed
-const getCategoryForBreed = (breed) => {
-  const categories = {
-    'Chickens': [
-        'Ayam Cemani', 'Bantam Cochin', 'Bantam Lyonnaise', 'Bantam Orpington',
-        'Bielfelder', 'Copper Marans', 'Cream Legbar', 'Easter Egger',
-        'Favaucana', 'Gold Laced Polish', 'Hedemora', 'Heritage Plymouth Rock',
-        'Heritage Rhode Island White', 'Hmong', 'Icelandic', 'Lyonnaise',
-        'Olive Egger', 'Pavlovskaya', 'Salmon Faverolles', 'Sanjak Longcrower',
-        'Serama', 'Seranaise', 'Silkie', 'Silkie Showgirl', 'Silver Laced Polish',
-        'Swedish Flower Hens', 'Tolbunt Polish', 'Whiting True Blue'
-    ],
-    'Ducks': [
-        'Bantam Silkie Ducks', 'Cayuga Duck', 'Heritage Ducks', 'Silver Appleyard Duck' 
-    ],
-    'Geese': [
-        'Roman Geese'
-    ],
-    'Turkeys': [
-        'Heritage Turkey', 'Black Spanish Turkey', 'Narragansett Turkey'
-    ],
-    'Guinea Fowl': [
-        'Guinea Fowl'
-    ],
-    'Quail': [
-        'Button Quail', 'Celadon Coturnix Quail', 'Pharaoh Coturnix Quail'
-    ]
-  };
-
-  for (const [category, breeds] of Object.entries(categories)) {
-    if (breeds.includes(breed)) {
-      return category;
-    }
-  }
-  return 'Other';
-};
-
 const DbService = {
   // Save a daily snapshot
   saveDailySnapshot: async (data) => {
     const db = await dbPromise;
-    const tx = db.transaction(['daily_counts', 'breeders', 'juveniles'], 'readwrite');
+    const tx = db.transaction([STORES.DAILY_COUNTS, STORES.BREEDERS, STORES.JUVENILES], 'readwrite');
     const today = new Date().toISOString().split('T')[0];
 
     try {
       for (const [breed, breedData] of Object.entries(data)) {
         for (const [stage, count] of Object.entries(breedData.stages)) {
           // Save main count
-          const dailyCount = await tx.objectStore('daily_counts').add({
+          const dailyCount = await tx.objectStore(STORES.DAILY_COUNTS).add({
             date: today,
             breed,
             category: getCategoryForBreed(breed),
@@ -78,14 +43,14 @@ const DbService = {
           });
 
           // Save breeders
-          await tx.objectStore('breeders').add({
+          await tx.objectStore(STORES.BREEDERS).add({
             daily_count_id: dailyCount,
             hens: breedData.breeders.hens,
             roosters: breedData.breeders.roosters
           });
 
           // Save juveniles
-          await tx.objectStore('juveniles').add({
+          await tx.objectStore(STORES.JUVENILES).add({
             daily_count_id: dailyCount,
             cockerels: breedData.juvenile.cockerels,
             pullets: breedData.juvenile.pullets,
@@ -103,19 +68,19 @@ const DbService = {
   // Get historical data for a breed
   getBreedHistory: async (breed, startDate, endDate) => {
     const db = await dbPromise;
-    const tx = db.transaction(['daily_counts', 'breeders', 'juveniles'], 'readonly');
+    const tx = db.transaction([STORES.DAILY_COUNTS, STORES.BREEDERS, STORES.JUVENILES], 'readonly');
     
     const counts = breed 
-      ? await tx.objectStore('daily_counts').index('breed').getAll(breed)
-      : await tx.objectStore('daily_counts').getAll();
+      ? await tx.objectStore(STORES.DAILY_COUNTS).index('breed').getAll(breed)
+      : await tx.objectStore(STORES.DAILY_COUNTS).getAll();
     
     const filteredCounts = counts.filter(count => 
       count.date >= startDate && count.date <= endDate
     );
 
     return Promise.all(filteredCounts.map(async count => {
-      const breeders = await tx.objectStore('breeders').get(count.id);
-      const juveniles = await tx.objectStore('juveniles').get(count.id);
+      const breeders = await tx.objectStore(STORES.BREEDERS).get(count.id);
+      const juveniles = await tx.objectStore(STORES.JUVENILES).get(count.id);
       
       return {
         date: count.date,
@@ -135,9 +100,9 @@ const DbService = {
   // Get the latest snapshot
   getLatestSnapshot: async () => {
     const db = await dbPromise;
-    const tx = db.transaction(['daily_counts', 'breeders', 'juveniles'], 'readonly');
+    const tx = db.transaction([STORES.DAILY_COUNTS, STORES.BREEDERS, STORES.JUVENILES], 'readonly');
     
-    const counts = await tx.objectStore('daily_counts').getAll();
+    const counts = await tx.objectStore(STORES.DAILY_COUNTS).getAll();
     if (!counts || counts.length === 0) {
       return [];
     }
@@ -150,8 +115,8 @@ const DbService = {
     
     // Get related data for each count
     const result = await Promise.all(latestCounts.map(async count => {
-      const breeders = await tx.objectStore('breeders').get(count.id);
-      const juveniles = await tx.objectStore('juveniles').get(count.id);
+      const breeders = await tx.objectStore(STORES.BREEDERS).get(count.id);
+      const juveniles = await tx.objectStore(STORES.JUVENILES).get(count.id);
       
       return {
         date: count.date,

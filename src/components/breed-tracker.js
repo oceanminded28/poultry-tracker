@@ -6,33 +6,13 @@ import { Plus, Minus } from 'lucide-react';
 import NumberStepper from './number-stepper';
 import ExportButton from './export-button';
 import DbService from '@/db/db-service';
+import { CATEGORIES, STAGES } from '@/constants/breeds';
 
 const BreedTracker = () => {
-  const categories = {
-    'Chickens': [
-      'Ayam Cemani', 'Bantam Cochin', 'Bantam Lyonnaise', 'Bantam Orpington',
-      'Bielfelder', 'Copper Marans', 'Cream Legbar', 'Easter Egger',
-      'Favaucana', 'Gold Laced Polish', 'Hedemora', 'Heritage Plymouth Rock',
-      'Heritage Rhode Island White', 'Hmong', 'Icelandic', 'Lyonnaise',
-      'Olive Egger', 'Pavlovskaya', 'Salmon Faverolles', 'Sanjak Longcrower',
-      'Serama', 'Seranaise', 'Silkie', 'Silkie Showgirl', 'Silver Laced Polish',
-      'Swedish Flower Hens', 'Tolbunt Polish', 'Whiting True Blue'
-    ],
-    'Ducks': [
-      'Bantam Silkie Ducks', 'Cayuga Duck', 'Heritage Ducks', 'Silver Appleyard Duck'
-    ],
-    'Geese': ['Roman Geese', 'Guinea Fowl'],
-    'Quail': ['Button Quail', 'Celadon Coturnix Quail', 'Pharaoh Coturnix Quail'],
-    'Turkey': ['Heritage Turkey', 'Black Spanish Turkey', 'Narragansett Turkey'],
-    'Guinea Fowl': ['Guinea Fowl']
-  };
-
-  const stages = ['Incubator', 'Hatch', '1 Month', '2 Month', 'Juvenile'];
-
   // State declarations
   const [breedData, setBreedData] = useState(() => {
     const initialData = {};
-    Object.entries(categories).forEach(([category, breeds]) => {
+    Object.entries(CATEGORIES).forEach(([category, breeds]) => {
       breeds.forEach(breed => {
         initialData[breed] = {
           breeders: {
@@ -46,7 +26,7 @@ const BreedTracker = () => {
             unknown: 0
           }
         };
-        stages.forEach(stage => {
+        STAGES.forEach(stage => {
           if (stage !== 'Juvenile') {
             initialData[breed].stages[stage] = 0;
           }
@@ -147,10 +127,10 @@ const BreedTracker = () => {
   };
 
   const getCategoryTotal = (category) => {
-    return categories[category].reduce((sum, breed) => sum + getBreedTotal(breed), 0);
+    return CATEGORIES[category].reduce((sum, breed) => sum + getBreedTotal(breed), 0);
   };
 
-  const totalAllBreeds = Object.values(categories).reduce((sum, breeds) => 
+  const totalAllBreeds = Object.values(CATEGORIES).reduce((sum, breeds) => 
     sum + breeds.reduce((breedSum, breed) => breedSum + getBreedTotal(breed), 0), 0);
 
   useEffect(() => {
@@ -200,7 +180,7 @@ const BreedTracker = () => {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 mb-6">
-            {stages.slice(0, -1).map(stage => (
+            {STAGES.slice(0, -1).map(stage => (
               <div key={stage} className="bg-secondary p-3 rounded border border-foreground">
                 <div className="font-semibold text-text mb-2">{stage}</div>
                 <div>{getStageTotal(stage)}</div>
@@ -220,7 +200,7 @@ const BreedTracker = () => {
         </CardContent>
       </Card>
 
-      {Object.entries(categories).map(([category, breeds]) => (
+      {Object.entries(CATEGORIES).map(([category, breeds]) => (
         <Card key={category} className="mb-8 border-2 border-foreground">
           <CardHeader 
             className="bg-background text-white cursor-pointer flex flex-row items-center justify-between"
@@ -236,9 +216,9 @@ const BreedTracker = () => {
           </CardHeader>
           
           {expandedCategories[category] && (
-            <CardContent className="bg-white">
+            <CardContent className="bg-white pt-15">
               {/* Category Summary Section */}
-              <div className="mb-8 border-b border-foreground pb-8">
+              <div className="mb-8 border-b-2 border-foreground pb-8">
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-secondary p-3 rounded border border-foreground">
                     <div className="font-semibold text-text mb-2">Breeding Females</div>
@@ -254,7 +234,7 @@ const BreedTracker = () => {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  {stages.slice(0, -1).map(stage => (
+                  {STAGES.slice(0, -1).map(stage => (
                     <div key={stage} className="bg-secondary p-3 rounded border border-foreground">
                       <div className="font-semibold text-text mb-2">{stage}</div>
                       <div>
@@ -282,7 +262,7 @@ const BreedTracker = () => {
               </div>
               {/* Individual Breeds */}
               {breeds.map(breed => (
-                <div key={breed} className="mb-8 last:mb-0 border-b last:border-b-0 border-foreground pb-8">
+                <div key={breed} className="mb-8 last:mb-0 border-b-2 last:border-b-0 border-foreground pb-8">
                   <div className="flex justify-between items-center cursor-pointer mb-6"
                     onClick={() => toggleBreed(breed)}
                   >
@@ -319,7 +299,7 @@ const BreedTracker = () => {
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4 mb-6">
-                        {stages.slice(0, -1).map(stage => (
+                        {STAGES.slice(0, -1).map(stage => (
                           <div key={stage} className="bg-secondary p-3 rounded border border-foreground">
                             <label className="text-sm block mb-2 text-text">{stage}</label>
                             <NumberStepper
