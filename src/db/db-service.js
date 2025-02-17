@@ -31,31 +31,57 @@ const DbService = {
     const today = new Date().toISOString().split('T')[0];
 
     try {
+      console.log('Input data:', data);  // Log the input data
+
       for (const [breed, breedData] of Object.entries(data)) {
-        for (const [stage, count] of Object.entries(breedData.stages)) {
+        // Log the raw values
+        console.log('Processing breed:', breed, {
+          breeders: breedData.breeders,
+          juvenile: breedData.juvenile
+        });
+
+        // Calculate stage totals
+        const stageTotals = Object.values(breedData.stages).reduce((sum, count) => sum + Number(count || 0), 0);
+        
+        // Calculate total count
+        const totalCount = 
+          Number(breedData.breeders.females || 0) +
+          Number(breedData.breeders.males || 0) +
+          Number(breedData.juvenile.males || 0) +
+          Number(breedData.juvenile.females || 0) +
+          Number(breedData.juvenile.unknown || 0) +
+          stageTotals;
+
+        if (totalCount > 0) {
           // Save main count
           const dailyCount = await tx.objectStore(STORES.DAILY_COUNTS).add({
             date: today,
             breed,
             category: getCategoryForBreed(breed),
-            stage,
-            count
+            stage: 'Current',
+            count: totalCount
           });
 
-          // Save breeders
+          console.log('Saved daily count:', dailyCount);
+
+          // Save breeders using the same field names as breed-tracker
           await tx.objectStore(STORES.BREEDERS).add({
             daily_count_id: dailyCount,
-            hens: breedData.breeders.hens,
-            roosters: breedData.breeders.roosters
+            females: Number(breedData.breeders.females) || 0,
+            males: Number(breedData.breeders.males) || 0
           });
 
-          // Save juveniles
+          // Save juveniles using the same field names as breed-tracker
           await tx.objectStore(STORES.JUVENILES).add({
             daily_count_id: dailyCount,
-            cockerels: breedData.juvenile.cockerels,
-            pullets: breedData.juvenile.pullets,
-            unknown: breedData.juvenile.unknown
+            males: Number(breedData.juvenile.males) || 0,
+            females: Number(breedData.juvenile.females) || 0,
+            unknown: Number(breedData.juvenile.unknown) || 0
           });
+
+          console.log('Saved complete record for:', breed);
+        } else {
+          console.log('Skipping breed with no counts:', breed);
         }
       }
       await tx.done;
@@ -88,8 +114,8 @@ const DbService = {
         breed: count.breed,
         stage: count.stage,
         count: count.count,
-        hens: breeders?.hens || 0,
-        roosters: breeders?.roosters || 0,
+        hens: breeders?.females || 0,
+        roosters: breeders?.males || 0,
         cockerels: juveniles?.cockerels || 0,
         pullets: juveniles?.pullets || 0,
         unknown: juveniles?.unknown || 0
@@ -107,63 +133,73 @@ const DbService = {
       return [];
     }
 
-    // Find the latest date
     const dates = counts.map(c => new Date(c.date).getTime());
     const latestDate = new Date(Math.max(...dates)).toISOString().split('T')[0];
-    
     const latestCounts = counts.filter(c => c.date === latestDate);
+    const uniqueCounts = new Map();
     
-    // Get related data for each count
-    const result = await Promise.all(latestCounts.map(async count => {
+    for (const count of latestCounts) {
       const breeders = await tx.objectStore(STORES.BREEDERS).get(count.id);
       const juveniles = await tx.objectStore(STORES.JUVENILES).get(count.id);
       
-      return {
+      console.log('Raw data for:', count.breed, { breeders, juveniles });
+      
+      const key = count.breed;
+      
+      const entry = {
         date: count.date,
         category: count.category,
         breed: count.breed,
-        stage: count.stage,
+        stage: 'Current',
         count: count.count,
-        hens: breeders?.hens || 0,
-        roosters: breeders?.roosters || 0,
-        cockerels: juveniles?.cockerels || 0,
-        pullets: juveniles?.pullets || 0,
-        unknown: juveniles?.unknown || 0
+        breeders: {
+          females: Number(breeders?.females) || 0,
+          males: Number(breeders?.males) || 0
+        },
+        juvenile: {
+          males: Number(juveniles?.males) || 0,
+          females: Number(juveniles?.females) || 0,
+          unknown: Number(juveniles?.unknown) || 0
+        }
       };
-    }));
+      
+      entry.count = entry.females + entry.males + entry.males + entry.females + entry.unknown;
+      
+      if (entry.count > 0) {
+        uniqueCounts.set(key, entry);
+      }
+    }
 
-    return result;
+    return Array.from(uniqueCounts.values());
   },
 
   generateCSV: (data) => {
     try {
-      // Ensure data is an array
-      if (!Array.isArray(data)) {
-        console.error('Data must be an array');
-        return null;
-      }
+      const filteredData = data.filter(record => 
+        record.females > 0 || 
+        record.males > 0 || 
+        record.unknown > 0
+      );
 
-      // Format data for CSV
-      const formattedData = data.map(record => ({
+      const formattedData = filteredData.map(record => ({
         Date: record.date,
         Category: record.category,
         Breed: record.breed,
         Stage: record.stage,
         Count: record.count,
-        'Breeding Hens': record.hens,
-        'Breeding Roosters': record.roosters,
-        'Juvenile Cockerels': record.cockerels,
-        'Juvenile Pullets': record.pullets,
+        'Breeding Hens': record.females,
+        'Breeding Roosters': record.males,
+        'Juvenile Male': record.males,
+        'Juvenile Female': record.females,
         'Juvenile Unknown': record.unknown
       }));
 
-      // Convert to CSV
       return stringify(formattedData, {
         header: true,
         columns: [
           'Date', 'Category', 'Breed', 'Stage', 'Count',
           'Breeding Hens', 'Breeding Roosters',
-          'Juvenile Cockerels', 'Juvenile Pullets', 'Juvenile Unknown'
+          'Juvenile Male', 'Juvenile Female', 'Juvenile Unknown'
         ]
       });
     } catch (error) {
@@ -215,7 +251,32 @@ const DbService = {
       console.error('Export failed:', error);
       return false;
     }
+  },
+
+  // Add this function to help us debug
+  debugDatabase: async () => {
+    const db = await dbPromise;
+    const tx = db.transaction([STORES.DAILY_COUNTS, STORES.BREEDERS, STORES.JUVENILES], 'readonly');
+    
+    const counts = await tx.objectStore(STORES.DAILY_COUNTS).getAll();
+    const breeders = await tx.objectStore(STORES.BREEDERS).getAll();
+    const juveniles = await tx.objectStore(STORES.JUVENILES).getAll();
+    
+    console.log('Database contents:');
+    console.log('Counts:', counts);
+    console.log('Breeders:', breeders);
+    console.log('Juveniles:', juveniles);
+    
+    // Log the database version
+    console.log('Database version:', db.version);
+    // Log the object store names
+    console.log('Object stores:', Array.from(db.objectStoreNames));
   }
 };
+
+// Call this function when the app starts
+if (typeof window !== 'undefined') {
+  DbService.debugDatabase().catch(console.error);
+}
 
 export default DbService;
