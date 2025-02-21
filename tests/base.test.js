@@ -9,6 +9,7 @@ test.describe("POC", () => {
   test('basic navigation test', async ({ page }) => {
     await ai('Click the Chickens button',{ page, test });
     await ai('Ayam Cemani', { page, test, shouldBeVisible: true });
+    await ai('Click Ayam Cemani',{ page, test });
     await page.screenshot({ path: 'test-results/screenshot.png' });
   }); 
 }); 

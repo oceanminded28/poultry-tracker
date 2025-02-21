@@ -25,7 +25,7 @@ export const CATEGORIES = {
   ]
 };
 
-export const STAGES = ['Incubator', 'Hatch', '1 Month', '2 Month', 'Juvenile'];
+export const STAGES = ['Incubator', 'Hatch', '1 Month', '2 Month'];
 
 export const getCategoryForBreed = (breed) => {
   for (const [category, breeds] of Object.entries(CATEGORIES)) {
@@ -33,5 +33,5 @@ export const getCategoryForBreed = (breed) => {
       return category;
     }
   }
-  return 'Other';
+  return 'Unknown';
 };

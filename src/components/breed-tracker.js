@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, ChevronUp, ChevronDown } from 'lucide-react';
 import NumberStepper from './number-stepper';
 import ExportButton from './export-button';
 import DbService from '@/db/db-service';
@@ -270,8 +270,8 @@ const BreedTracker = () => {
                     <div className="flex items-center gap-2">
                       <span className="text-sm">Total: {getBreedTotal(breed)}</span>
                       {expandedBreeds[breed] ? 
-                        <Minus size={20} className="text-background" /> : 
-                          <Plus size={20} className="text-background" />
+                        <ChevronUp size={20} className="text-background" /> : 
+                        <ChevronDown size={20} className="text-background" />
                       }
                     </div>
                   </div>

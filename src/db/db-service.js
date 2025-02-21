@@ -2,6 +2,7 @@ import { stringify } from 'csv-stringify/sync';
 import { openDB } from 'idb';
 import { DB_NAME, DB_VERSION, STORES } from '@/constants/database';
 import { getCategoryForBreed } from '@/constants/breeds';
+import { STAGES } from '@/constants/breeds';
 
 // Initialize IndexedDB connection only in browser environment
 const dbPromise = (typeof window !== 'undefined' && window.indexedDB) 
@@ -40,9 +41,6 @@ const DbService = {
           juvenile: breedData.juvenile
         });
 
-        // Calculate stage totals
-        const stageTotals = Object.values(breedData.stages).reduce((sum, count) => sum + Number(count || 0), 0);
-        
         // Calculate total count
         const totalCount = 
           Number(breedData.breeders.females || 0) +
@@ -50,30 +48,43 @@ const DbService = {
           Number(breedData.juvenile.males || 0) +
           Number(breedData.juvenile.females || 0) +
           Number(breedData.juvenile.unknown || 0) +
-          stageTotals;
+          Number(breedData.stages['Incubator'] || 0) +
+          Number(breedData.stages['Hatch'] || 0) +
+          Number(breedData.stages['1 Month'] || 0) +
+          Number(breedData.stages['2 Month'] || 0);
 
         if (totalCount > 0) {
-          // Save main count
-          const dailyCount = await tx.objectStore(STORES.DAILY_COUNTS).add({
+          // Create the daily count record first
+          const dailyCountKey = await tx.objectStore(STORES.DAILY_COUNTS).add({
             date: today,
             breed,
             category: getCategoryForBreed(breed),
-            stage: 'Current',
+            stage: 'Total',
             count: totalCount
           });
 
-          console.log('Saved daily count:', dailyCount);
+          // Save the four specific stages
+          const stages = ['Incubator', 'Hatch', '1 Month', '2 Month'];
+          for (const stage of stages) {
+            await tx.objectStore(STORES.DAILY_COUNTS).add({
+              date: today,
+              breed,
+              category: getCategoryForBreed(breed),
+              stage,
+              count: Number(breedData.stages[stage] || 0)
+            });
+          }
 
-          // Save breeders using the same field names as breed-tracker
+          // Save breeders
           await tx.objectStore(STORES.BREEDERS).add({
-            daily_count_id: dailyCount,
+            daily_count_id: dailyCountKey,
             females: Number(breedData.breeders.females) || 0,
             males: Number(breedData.breeders.males) || 0
           });
 
-          // Save juveniles using the same field names as breed-tracker
+          // Save juveniles
           await tx.objectStore(STORES.JUVENILES).add({
-            daily_count_id: dailyCount,
+            daily_count_id: dailyCountKey,
             males: Number(breedData.juvenile.males) || 0,
             females: Number(breedData.juvenile.females) || 0,
             unknown: Number(breedData.juvenile.unknown) || 0
@@ -114,10 +125,10 @@ const DbService = {
         breed: count.breed,
         stage: count.stage,
         count: count.count,
-        hens: breeders?.females || 0,
-        roosters: breeders?.males || 0,
-        cockerels: juveniles?.cockerels || 0,
-        pullets: juveniles?.pullets || 0,
+        females: breeders?.females || 0,
+        males: breeders?.males || 0,
+        males: juveniles?.males || 0,
+        females: juveniles?.females || 0,
         unknown: juveniles?.unknown || 0
       };
     }));
@@ -150,7 +161,7 @@ const DbService = {
         date: count.date,
         category: count.category,
         breed: count.breed,
-        stage: 'Current',
+        stage: count.stage,
         count: count.count,
         breeders: {
           females: Number(breeders?.females) || 0,
@@ -187,10 +198,10 @@ const DbService = {
         Breed: record.breed,
         Stage: record.stage,
         Count: record.count,
-        'Breeding Hens': record.females,
-        'Breeding Roosters': record.males,
-        'Juvenile Male': record.males,
-        'Juvenile Female': record.females,
+        'Breeding Females': record.females,
+        'Breeding Males': record.males,
+        'Juvenile Males': record.males,
+        'Juvenile Females': record.females,
         'Juvenile Unknown': record.unknown
       }));
 
@@ -198,8 +209,8 @@ const DbService = {
         header: true,
         columns: [
           'Date', 'Category', 'Breed', 'Stage', 'Count',
-          'Breeding Hens', 'Breeding Roosters',
-          'Juvenile Male', 'Juvenile Female', 'Juvenile Unknown'
+          'Breeding Females', 'Breeding Males',
+          'Juvenile Males', 'Juvenile Females', 'Juvenile Unknown'
         ]
       });
     } catch (error) {
