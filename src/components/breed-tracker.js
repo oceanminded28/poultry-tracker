@@ -138,16 +138,31 @@ const BreedTracker = () => {
 
     const saveSnapshot = async () => {
       try {
-        await DbService.saveDailySnapshot(breedData);
+        // Filter out breeds with no counts
+        const nonEmptyBreeds = Object.entries(breedData).reduce((acc, [breed, data]) => {
+          const hasBreederCounts = data.breeders.females > 0 || data.breeders.males > 0;
+          const hasJuvenileCounts = data.juvenile.females > 0 || data.juvenile.males > 0 || data.juvenile.unknown > 0;
+          const hasStageCounts = Object.values(data.stages).some(count => count > 0);
+          
+          if (hasBreederCounts || hasJuvenileCounts || hasStageCounts) {
+            acc[breed] = data;
+          }
+          return acc;
+        }, {});
+
+        // Only save if we have non-zero counts
+        if (Object.keys(nonEmptyBreeds).length > 0) {
+          console.log('Saving snapshot:', nonEmptyBreeds) // Debug log
+          await DbService.saveDailySnapshot(nonEmptyBreeds);
+        }
       } catch (error) {
         console.error('Failed to save snapshot:', error);
       }
     };
 
-    // Only save if we have data
-    if (Object.keys(breedData).length > 0) {
-      saveSnapshot();
-    }
+    // Use a longer debounce time
+    const timeoutId = setTimeout(saveSnapshot, 2000);
+    return () => clearTimeout(timeoutId);
   }, [breedData]);
 
   return (
@@ -180,7 +195,7 @@ const BreedTracker = () => {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 mb-6">
-            {STAGES.slice(0, -1).map(stage => (
+            {STAGES.map(stage => (
               <div key={stage} className="bg-secondary p-3 rounded border border-foreground">
                 <div className="font-semibold text-text mb-2">{stage}</div>
                 <div>{getStageTotal(stage)}</div>
@@ -234,7 +249,7 @@ const BreedTracker = () => {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  {STAGES.slice(0, -1).map(stage => (
+                  {STAGES.map(stage => (
                     <div key={stage} className="bg-secondary p-3 rounded border border-foreground">
                       <div className="font-semibold text-text mb-2">{stage}</div>
                       <div>
@@ -299,7 +314,7 @@ const BreedTracker = () => {
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4 mb-6">
-                        {STAGES.slice(0, -1).map(stage => (
+                        {STAGES.map(stage => (
                           <div key={stage} className="bg-secondary p-3 rounded border border-foreground">
                             <label className="text-sm block mb-2 text-text">{stage}</label>
                             <NumberStepper

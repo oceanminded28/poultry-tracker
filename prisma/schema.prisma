@@ -1,0 +1,38 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model DailyCount {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  breed     String
+  stage     String
+  count     Int
+  breeders  Breeder?
+  juveniles Juvenile?
+}
+
+model Breeder {
+  id            Int        @id @default(autoincrement())
+  dailyCount    DailyCount @relation(fields: [dailyCountId], references: [id])
+  dailyCountId  Int        @unique
+  females       Int
+  males         Int
+}
+
+model Juvenile {
+  id            Int        @id @default(autoincrement())
+  dailyCount    DailyCount @relation(fields: [dailyCountId], references: [id])
+  dailyCountId  Int        @unique
+  males         Int
+  females       Int
+  unknown       Int
+}

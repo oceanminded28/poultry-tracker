@@ -155,7 +155,6 @@ const DbService = {
       'Incubator',
       'Hatch',
       '1 Month',
-      '2 Month',
       'Juvenile Total',
       'Unknown',
     ].join(',');
@@ -169,7 +168,6 @@ const DbService = {
           breedData.stages['Incubator'] || 0,
           breedData.stages['Hatch'] || 0,
           breedData.stages['1 Month'] || 0,
-          breedData.stages['2 Month'] || 0,
           breedData.juvenile.unknown,
         ].join(',');
       }).join('\n');
