@@ -1,64 +1,43 @@
-// First create the fixture file
-const base = require('@playwright/test');
+const { test: base } = require('@playwright/test');
+const { PrismaClient } = require('@prisma/client');
 
-async function clearDatabase(page) {
-  await page.evaluate(() => {
-    return new Promise((resolve) => {
-      const request = indexedDB.deleteDatabase('PoultryTrackerDB');
-      request.onsuccess = () => resolve();
-    });
-  });
-}
+const prisma = new PrismaClient();
 
-async function setupDatabase(page) {
-  await page.evaluate(() => {
-    return new Promise((resolve) => {
-      const request = indexedDB.open('PoultryTrackerDB', 1);
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-        const store = db.createObjectStore('dailyCounts', {
-          keyPath: 'id',
-          autoIncrement: true,
-        });
-        store.createIndex('date', 'date');
-        store.createIndex('breed', 'breed');
-      };
-      request.onsuccess = () => resolve();
-    });
-  });
-}
-
-exports.test = base.test.extend({
-  db: async ({ page }, runTest) => {
-    // Setup database before test
-    await clearDatabase(page);
-    await setupDatabase(page);
-    
-    // Make database helper functions available to test
-    const db = {
-      async getAll() {
-        return page.evaluate(() => {
-          return new Promise((resolve) => {
-            const request = indexedDB.open('PoultryTrackerDB', 1);
-            request.onsuccess = () => {
-              const db = request.result;
-              const tx = db.transaction('dailyCounts', 'readonly');
-              const store = tx.objectStore('dailyCounts');
-              const getRequest = store.getAll();
-              getRequest.onsuccess = () => resolve(getRequest.result);
-            };
-          });
-        });
+// Extend the test with a db fixture
+const test = base.extend({
+  db: async ({}, testInfo) => {
+    await testInfo({
+      clearAll: async () => {
+        await prisma.breeder.deleteMany();
+        await prisma.juvenile.deleteMany();
+        await prisma.dailyCount.deleteMany();
       },
-      async clear() {
-        await clearDatabase(page);
-        await setupDatabase(page);
+      getAll: async () => {
+        const records = await prisma.dailyCount.findMany({
+          include: {
+            breeders: true,
+            juveniles: true
+          }
+        });
+        
+        // Clean up records by removing undefined fields
+        return records.map(record => {
+          const cleaned = {
+            id: record.id,
+            date: record.date,
+            breed: record.breed,
+            stage: record.stage,
+            count: record.count
+          };
+          
+          if (record.breeders) cleaned.breeders = record.breeders;
+          if (record.juveniles) cleaned.juveniles = record.juveniles;
+          
+          return cleaned;
+        });
       }
-    };
-    
-    await runTest(db);
-    
-    // Cleanup after test
-    await clearDatabase(page);
+    });
   },
-}); 
+});
+
+module.exports = { test }; 

@@ -7,24 +7,24 @@ const isProd = process.env.NODE_ENV === 'production'
 
 const DbService = {
   // Save a daily snapshot
-  saveDailySnapshot: async (breedData) => {
-    const response = await fetch('/api/db', {
+  saveDailySnapshot: async (data) => {
+    console.log('Saving snapshot:', data);
+    const response = await fetch('http://localhost:3000/api/db', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        action: 'saveDailySnapshot',
-        data: breedData
-      })
-    })
-
+      body: JSON.stringify(data)
+    });
+    
+    const result = await response.json();
+    console.log('API Response:', result);
+    
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to save snapshot')
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-
-    return await response.json()
+    
+    return result;
   },
 
   // Get historical data for a breed
@@ -191,4 +191,5 @@ if (typeof window !== 'undefined') {
   DbService.debugDatabase().catch(console.error)
 }
 
+export const { saveDailySnapshot } = DbService;
 export default DbService

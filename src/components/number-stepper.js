@@ -3,7 +3,7 @@
 import React from 'react';
 import { Plus, Minus } from 'lucide-react';
 
-const NumberStepper = ({ value, onChange, min = 0 }) => {
+const NumberStepper = ({ value, onChange, min = 0, testId }) => {
   const handleDecrement = () => {
     if (value > min) {
       onChange(value - 1);
@@ -15,10 +15,11 @@ const NumberStepper = ({ value, onChange, min = 0 }) => {
   };
 
   return (
-    <div className="flex items-center">
+    <div className="flex items-center" data-testid={testId}>
       <button
         onClick={handleDecrement}
         className="p-1 bg-white border border-foreground rounded-l hover:bg-gray-100"
+        aria-label="Decrease"
       >
         <Minus size={16} className="text-foreground" />
       </button>
@@ -28,6 +29,7 @@ const NumberStepper = ({ value, onChange, min = 0 }) => {
       <button
         onClick={handleIncrement}
         className="p-1 bg-white border border-foreground rounded-r hover:bg-gray-100"
+        aria-label="Increase"
       >
         <Plus size={16} className="text-foreground" />
       </button>

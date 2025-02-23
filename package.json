@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "npm run clear-db && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "studio": "prisma studio",
-    "dev:all": "concurrently \"npm run dev\" \"npm run studio\""
+    "dev:all": "concurrently \"npm run dev\" \"npm run studio\"",
+    "db:reset": "concurrently \"rm prisma/dev.db\" \"npm prisma db push\"",
+    "clear-db": "node scripts/clearDb.js"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",

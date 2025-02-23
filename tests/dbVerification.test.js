@@ -3,7 +3,9 @@ const { expect } = require('@playwright/test');
 import { ai } from '@zerostep/playwright'
 
 test.describe("Database Tests", () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, db }) => {
+    // Clear the database before each test
+    await db.clearAll();
     await page.goto("/");
   });
   
@@ -11,27 +13,32 @@ test.describe("Database Tests", () => {
     // Check initial state
     const initialData = await db.getAll();
     console.log('Initial DB state:', initialData);
+    expect(initialData.length).toBe(0);
 
     // Wait for the React component to mount and initialize
     await page.waitForSelector('h1:has-text("Sugar Feather Farm")');
     
-    // Click to expand the category and breed
-    await ai('Click the Chickens button',{ page, test });
-    await ai('Click Ayam Cemani',{ page, test });
+    // Click category and breed
+    await page.click('[data-category="Chickens"]');
+    await page.click('[data-breed="Ayam Cemani"]');
     
-    // Input the data
-    await ai('Click the Plus button under Breeding Females',{ page, test });
-    await ai('Click the Plus button under Breeding Males',{ page, test });
+    // Click the number steppers
+    await page.click('[data-testid="breeder-females"] button[aria-label="Increase"]');
+    await page.click('[data-testid="breeder-males"] button[aria-label="Increase"]');
     
     // Wait for data to be saved
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(3000);
     
     // Check final state
     const savedData = await db.getAll();
     console.log('Final DB state:', savedData);
     
-    expect(savedData).toBeDefined();
-    expect(savedData.length).toBeGreaterThan(0);
-    expect(savedData[0].data['Ayam Cemani']).toBeDefined();
+    expect(savedData.length).toBe(1);
+    const record = savedData[0];
+    expect(record.breed).toBe('Ayam Cemani');
+    expect(record.stage).toBe('Breeder');
+    expect(record.count).toBe(2);
+    expect(record.breeders.females).toBe(1);
+    expect(record.breeders.males).toBe(1);
   });
 }); 

@@ -54,16 +54,21 @@ const BreedTracker = () => {
   };
 
   const handleBreedersChange = (breed, type, value) => {
-    setBreedData(prev => ({
-      ...prev,
-      [breed]: {
-        ...prev[breed],
-        breeders: {
-          ...prev[breed].breeders,
-          [type]: value
+    console.log('handleBreedersChange called:', { breed, type, value });
+    setBreedData(prev => {
+      const newData = {
+        ...prev,
+        [breed]: {
+          ...prev[breed],
+          breeders: {
+            ...prev[breed].breeders,
+            [type]: value
+          }
         }
-      }
-    }));
+      };
+      console.log('New breedData:', newData);
+      return newData;
+    });
   };
 
   const handleJuvenileChange = (breed, type, value) => {
@@ -138,21 +143,17 @@ const BreedTracker = () => {
 
     const saveSnapshot = async () => {
       try {
-        // Filter out breeds with no counts
+        console.log('State changed, current data:', breedData);
         const nonEmptyBreeds = Object.entries(breedData).reduce((acc, [breed, data]) => {
           const hasBreederCounts = data.breeders.females > 0 || data.breeders.males > 0;
-          const hasJuvenileCounts = data.juvenile.females > 0 || data.juvenile.males > 0 || data.juvenile.unknown > 0;
-          const hasStageCounts = Object.values(data.stages).some(count => count > 0);
-          
-          if (hasBreederCounts || hasJuvenileCounts || hasStageCounts) {
+          if (hasBreederCounts) {
             acc[breed] = data;
           }
           return acc;
         }, {});
 
-        // Only save if we have non-zero counts
         if (Object.keys(nonEmptyBreeds).length > 0) {
-          console.log('Saving snapshot:', nonEmptyBreeds) // Debug log
+          console.log('About to save breeds:', nonEmptyBreeds);
           await DbService.saveDailySnapshot(nonEmptyBreeds);
         }
       } catch (error) {
@@ -160,7 +161,6 @@ const BreedTracker = () => {
       }
     };
 
-    // Use a longer debounce time
     const timeoutId = setTimeout(saveSnapshot, 2000);
     return () => clearTimeout(timeoutId);
   }, [breedData]);
@@ -222,7 +222,9 @@ const BreedTracker = () => {
             onClick={() => toggleCategory(category)}
           >
             <CardTitle className="text-lg">
-              {category} ({getCategoryTotal(category)})
+              <button data-category={category}>
+                {category} ({getCategoryTotal(category)})
+              </button>
             </CardTitle>
             {expandedCategories[category] ? 
               <Minus size={24} className="text-white" /> : 
@@ -281,7 +283,11 @@ const BreedTracker = () => {
                   <div className="flex justify-between items-center cursor-pointer mb-6"
                     onClick={() => toggleBreed(breed)}
                   >
-                    <div className="font-medium text-text">{breed}</div>
+                    <div className="font-medium text-text">
+                      <button data-breed={breed}>
+                        {breed}
+                      </button>
+                    </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm">Total: {getBreedTotal(breed)}</span>
                       {expandedBreeds[breed] ? 
@@ -298,29 +304,37 @@ const BreedTracker = () => {
                           <label className="text-sm block mb-2 font-medium text-text">
                             Breeding Females
                           </label>
-                          <NumberStepper
-                            value={breedData[breed].breeders.females}
-                            onChange={(value) => handleBreedersChange(breed, 'females', value)}
-                          />
+                          <div data-testid={`breeder-females`}>
+                            <NumberStepper
+                              value={breedData[breed].breeders.females}
+                              onChange={(value) => handleBreedersChange(breed, 'females', value)}
+                              testId="breeder-females"
+                            />
+                          </div>
                         </div>
                         <div className="bg-secondary p-3 rounded border border-foreground">
                           <label className="text-sm block mb-2 font-medium text-text">
                             Breeding Males
                           </label>
-                          <NumberStepper
-                            value={breedData[breed].breeders.males}
-                            onChange={(value) => handleBreedersChange(breed, 'males', value)}
-                          />
+                          <div data-testid={`breeder-males`}>
+                            <NumberStepper
+                              value={breedData[breed].breeders.males}
+                              onChange={(value) => handleBreedersChange(breed, 'males', value)}
+                              testId="breeder-males"
+                            />
+                          </div>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4 mb-6">
                         {STAGES.map(stage => (
                           <div key={stage} className="bg-secondary p-3 rounded border border-foreground">
                             <label className="text-sm block mb-2 text-text">{stage}</label>
-                            <NumberStepper
-                              value={breedData[breed].stages[stage]}
-                              onChange={(value) => handleStageChange(breed, stage, value)}
-                            />
+                            <div data-testid={`stage-${stage}`}>
+                              <NumberStepper
+                                value={breedData[breed].stages[stage]}
+                                onChange={(value) => handleStageChange(breed, stage, value)}
+                              />
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -332,24 +346,30 @@ const BreedTracker = () => {
                         <div className="grid grid-cols-3 gap-4">
                           <div>
                             <label className="text-xs block mb-2 text-text">Males</label>
-                            <NumberStepper
-                              value={breedData[breed].juvenile.males}
-                              onChange={(value) => handleJuvenileChange(breed, 'males', value)}
-                            />
+                            <div data-testid={`juvenile-males`}>
+                              <NumberStepper
+                                value={breedData[breed].juvenile.males}
+                                onChange={(value) => handleJuvenileChange(breed, 'males', value)}
+                              />
+                            </div>
                           </div>
                           <div>
                             <label className="text-xs block mb-2 text-text">Females</label>
-                            <NumberStepper
-                              value={breedData[breed].juvenile.females}
-                              onChange={(value) => handleJuvenileChange(breed, 'females', value)}
-                            />
+                            <div data-testid={`juvenile-females`}>
+                              <NumberStepper
+                                value={breedData[breed].juvenile.females}
+                                onChange={(value) => handleJuvenileChange(breed, 'females', value)}
+                              />
+                            </div>
                           </div>
                           <div>
                             <label className="text-xs block mb-2 text-text">Unknown</label>
-                            <NumberStepper
-                              value={breedData[breed].juvenile.unknown}
-                              onChange={(value) => handleJuvenileChange(breed, 'unknown', value)}
-                            />
+                            <div data-testid={`juvenile-unknown`}>
+                              <NumberStepper
+                                value={breedData[breed].juvenile.unknown}
+                                onChange={(value) => handleJuvenileChange(breed, 'unknown', value)}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
