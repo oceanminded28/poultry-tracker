@@ -10,7 +10,10 @@
     "studio": "prisma studio",
     "dev:all": "concurrently \"npm run dev\" \"npm run studio\"",
     "db:reset": "concurrently \"rm prisma/dev.db\" \"npm prisma db push\"",
-    "clear-db": "node scripts/clearDb.js"
+    "clear-db": "node scripts/clearDb.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:unit": "jest tests/unit"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",
@@ -27,12 +30,18 @@
     "tailwind-merge": "^3.0.1"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.9",
+    "@babel/preset-env": "^7.26.9",
     "@eslint/eslintrc": "^3",
     "@playwright/test": "^1.50.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22.13.4",
     "@zerostep/playwright": "^0.1.5",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
+    "jest": "^29.7.0",
     "postcss": "^8",
     "prisma": "^6.4.1",
     "tailwindcss": "^3.4.1"

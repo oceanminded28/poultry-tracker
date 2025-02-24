@@ -8,23 +8,28 @@ const isProd = process.env.NODE_ENV === 'production'
 const DbService = {
   // Save a daily snapshot
   saveDailySnapshot: async (data) => {
-    console.log('Saving snapshot:', data);
-    const response = await fetch('http://localhost:3000/api/db', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data)
-    });
-    
-    const result = await response.json();
-    console.log('API Response:', result);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    try {
+      console.log('DbService: About to save data:', JSON.stringify(data, null, 2));
+      const response = await fetch('http://localhost:3000/api/db', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await response.json();
+      console.log('API Response:', result);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('DbService error:', error);
+      throw error;
     }
-    
-    return result;
   },
 
   // Get historical data for a breed

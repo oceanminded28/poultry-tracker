@@ -7,6 +7,13 @@ import NumberStepper from './number-stepper';
 import ExportButton from './export-button';
 import DbService from '@/db/db-service';
 import { CATEGORIES, STAGES } from '@/constants/breeds';
+import { 
+  getJuvenileTotal, 
+  getBreedTotal, 
+  getStageTotal, 
+  getBreedersTotal,
+  getCategoryTotal 
+} from '../utils/breed-utils';
 
 const BreedTracker = () => {
   // State declarations
@@ -33,6 +40,7 @@ const BreedTracker = () => {
         });
       });
     });
+    console.log('Initial breed data:', initialData);
     return initialData;
   });
 
@@ -100,69 +108,60 @@ const BreedTracker = () => {
   };
 
   // Calculation functions
-  const getJuvenileTotal = (breed) => {
-    const juvenileData = breedData[breed].juvenile;
-    return Number(juvenileData.males || 0) + 
-           Number(juvenileData.females || 0) + 
-           Number(juvenileData.unknown || 0);
-  };
-
-  const getBreedTotal = (breed) => {
-    const stageTotal = Object.entries(breedData[breed].stages)
-      .reduce((sum, [stage, count]) => sum + count, 0);
-    return stageTotal + 
-           breedData[breed].breeders.females + 
-           breedData[breed].breeders.males +
-           getJuvenileTotal(breed);
-  };
-
-  const getStageTotal = (stage) => {
-    if (stage === 'Juvenile') {
-      return Object.keys(breedData).reduce((sum, breed) => sum + getJuvenileTotal(breed), 0);
-    }
-    return Object.values(breedData).reduce((sum, breed) => sum + (breed.stages[stage] || 0), 0);
-  };
+  const totalAllBreeds = Object.values(CATEGORIES).reduce((sum, breeds) => 
+    sum + getCategoryTotal(null, breedData, breeds), 0);
 
   const getJuvenileTypeTotal = (type) => {
     return Object.values(breedData).reduce((sum, breed) => sum + breed.juvenile[type], 0);
   };
 
-  const getBreedersTotal = (type) => {
-    return Object.values(breedData).reduce((sum, breed) => sum + breed.breeders[type], 0);
-  };
-
-  const getCategoryTotal = (category) => {
-    return CATEGORIES[category].reduce((sum, breed) => sum + getBreedTotal(breed), 0);
-  };
-
-  const totalAllBreeds = Object.values(CATEGORIES).reduce((sum, breeds) => 
-    sum + breeds.reduce((breedSum, breed) => breedSum + getBreedTotal(breed), 0), 0);
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    let saveTimeout = null;
+    let lastSavedState = null;
+
     const saveSnapshot = async () => {
       try {
-        console.log('State changed, current data:', breedData);
+        // Get all non-empty breeds
         const nonEmptyBreeds = Object.entries(breedData).reduce((acc, [breed, data]) => {
           const hasBreederCounts = data.breeders.females > 0 || data.breeders.males > 0;
-          if (hasBreederCounts) {
+          const hasJuvenileCounts = data.juvenile.females > 0 || data.juvenile.males > 0 || data.juvenile.unknown > 0;
+          const hasStageCounts = Object.values(data.stages).some(count => count > 0);
+
+          if (hasBreederCounts || hasJuvenileCounts || hasStageCounts) {
             acc[breed] = data;
           }
           return acc;
         }, {});
 
-        if (Object.keys(nonEmptyBreeds).length > 0) {
-          console.log('About to save breeds:', nonEmptyBreeds);
+        // Convert to stable string for comparison
+        const currentState = JSON.stringify(nonEmptyBreeds, Object.keys(nonEmptyBreeds).sort());
+
+        // Only save if state has changed
+        if (Object.keys(nonEmptyBreeds).length > 0 && currentState !== lastSavedState) {
+          console.log('State changed, saving all breeds:', nonEmptyBreeds);
           await DbService.saveDailySnapshot(nonEmptyBreeds);
+          lastSavedState = currentState;
+        } else {
+          console.log('No changes to save');
         }
       } catch (error) {
         console.error('Failed to save snapshot:', error);
       }
     };
 
-    const timeoutId = setTimeout(saveSnapshot, 2000);
-    return () => clearTimeout(timeoutId);
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+    }
+
+    saveTimeout = setTimeout(saveSnapshot, 2000);
+
+    return () => {
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+      }
+    };
   }, [breedData]);
 
   return (
@@ -187,24 +186,24 @@ const BreedTracker = () => {
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-secondary p-3 rounded border border-foreground">
               <div className="font-semibold text-text mb-2">Breeder Females</div>
-              <div>{getBreedersTotal('females')}</div>
+              <div>{getBreedersTotal('females', breedData)}</div>
             </div>
             <div className="bg-secondary p-3 rounded border border-foreground">
               <div className="font-semibold text-text mb-2">Breeding Males</div>
-              <div>{getBreedersTotal('males')}</div>
+              <div>{getBreedersTotal('males', breedData)}</div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 mb-6">
             {STAGES.map(stage => (
               <div key={stage} className="bg-secondary p-3 rounded border border-foreground">
                 <div className="font-semibold text-text mb-2">{stage}</div>
-                <div>{getStageTotal(stage)}</div>
+                <div>{getStageTotal(stage, breedData)}</div>
               </div>
             ))}
           </div>
           <div className="bg-secondary p-3 rounded border border-foreground mb-4">
             <div className="font-semibold text-text mb-2">
-              Juvenile ({getStageTotal('Juvenile')})
+              Juvenile ({getStageTotal('Juvenile', breedData)})
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="text-sm">Males: {getJuvenileTypeTotal('males')}</div>
@@ -223,7 +222,7 @@ const BreedTracker = () => {
           >
             <CardTitle className="text-lg">
               <button data-category={category}>
-                {category} ({getCategoryTotal(category)})
+                {category} ({getCategoryTotal(category, breedData, breeds)})
               </button>
             </CardTitle>
             {expandedCategories[category] ? 
@@ -262,7 +261,7 @@ const BreedTracker = () => {
                 </div>
                 <div className="bg-secondary p-3 rounded border border-foreground">
                   <div className="font-semibold text-text mb-2">
-                    Juvenile ({breeds.reduce((sum, breed) => sum + getJuvenileTotal(breed), 0)})
+                    Juvenile ({breeds.reduce((sum, breed) => sum + getJuvenileTotal(breed, breedData), 0)})
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="text-sm">
@@ -289,7 +288,7 @@ const BreedTracker = () => {
                       </button>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">Total: {getBreedTotal(breed)}</span>
+                      <span className="text-sm">Total: {getBreedTotal(breed, breedData)}</span>
                       {expandedBreeds[breed] ? 
                         <ChevronUp size={20} className="text-background" /> : 
                         <ChevronDown size={20} className="text-background" />
@@ -341,7 +340,7 @@ const BreedTracker = () => {
                       <div className="bg-secondary p-3 rounded border border-foreground">
                         <div className="flex justify-between mb-3">
                           <label className="text-sm font-medium text-text">Juvenile</label>
-                          <span className="text-sm">Total: {getJuvenileTotal(breed)}</span>
+                          <span className="text-sm">Total: {getJuvenileTotal(breed, breedData)}</span>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                           <div>
